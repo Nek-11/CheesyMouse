@@ -918,19 +918,19 @@
             const groundY = canvas.height - groundHeight;
             
             // PROGRESSIVE DIFFICULTY: Gap gets smaller as score increases
-            const baseSmallGap = 140;
-            const baseLargeGap = 210;
+            const baseSmallGap = 130;
+            const baseLargeGap = 170;
             const minGap = 100; // Minimum gap size to keep it playable
             
-            // Reduce gap size by 2 pixels every 5 points, but don't go below minimum
-            const gapReduction = Math.min(Math.floor(score / 5) * 2, baseSmallGap - minGap);
+            // Reduce gap size by 5 pixels every 5 points, but don't go below minimum
+            const gapReduction = Math.min(Math.floor(score / 5) * 5, baseSmallGap - minGap);
             const smallGap = Math.max(baseSmallGap - gapReduction, minGap);
-            const largeGap = Math.max(baseLargeGap - gapReduction, minGap + 40);
+            const largeGap = Math.max(baseLargeGap - gapReduction, minGap + 20);
             
             const gapSize = Math.random() < 0.5 ? smallGap : largeGap;
             
             // VARIABLE GAP POSITIONING with safe margins
-            const safeMargin = 50; // Safe margin from top and bottom
+            const safeMargin = 30; // Safe margin from top and bottom
             const totalHeight = groundY - 80; // Total available height
             const minGapTop = safeMargin; // Minimum distance from top
             const maxGapTop = totalHeight - gapSize - safeMargin; // Maximum distance from top
