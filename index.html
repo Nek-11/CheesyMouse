@@ -49,6 +49,10 @@
                 this.ctx = this.canvas.getContext('2d');
                 this.ctx.imageSmoothingEnabled = false;
 
+                // Mobile detection and setup (detect once to avoid performance issues)
+                this.isMobile = window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                this.setupMobileCanvas();
+
                 // UI elements
                 this.scoreElement = document.getElementById('score');
                 this.gameOverElement = document.getElementById('gameOver');
@@ -56,6 +60,10 @@
                 this.restartBtn = document.getElementById('restartBtn');
                 this.titleScreen = document.getElementById('titleScreen');
                 this.startBtn = document.getElementById('startBtn');
+                this.instructionsElement = document.getElementById('instructions');
+
+                // Update instructions based on device
+                this.updateInstructions();
 
                 // Initialize systems
                 this.assetLoader = new AssetLoader();
@@ -65,8 +73,33 @@
                 this.mouse = null;
                 this.renderer = null;
                 this.gameLogic = null;
-                
+
+                // Performance profiling
+                this.perf = {
+                    lastLogTime: 0,
+                    frameCount: 0,
+                    update: 0,
+                    render: 0,
+                    drawMouse: 0,
+                    total: 0
+                };
+
                 console.log('CheesyMouseGame constructor completed');
+            }
+
+            setupMobileCanvas() {
+                if (this.isMobile) {
+                    // Mouse stays at left edge for mobile
+                    gameState.config.mouse.startX = 60;
+                }
+            }
+
+            updateInstructions() {
+                if (this.isMobile) {
+                    this.instructionsElement.textContent = 'TOUCH TO JUMP';
+                } else {
+                    this.instructionsElement.textContent = 'PRESS SPACEBAR OR CLICK TO JUMP';
+                }
             }
 
             async init() {
@@ -113,12 +146,12 @@
                          this.playMp3Sound('mouseEats');
                      });
 
-                     // Setup event listeners
-                     this.setupEventListeners();
-                    
-                    // Start game loop
-                    console.log('Starting game loop...');
-                    this.gameLoop();
+                                     // Setup event listeners
+                this.setupEventListeners();
+                
+                // Start game loop
+                console.log('Starting game loop...');
+                this.gameLoop();
                     
                 } catch (error) {
                     console.error('Error in onAssetsLoaded:', error);
@@ -140,37 +173,41 @@
                     }
                 });
 
-                // Click listener
-                document.addEventListener('mousedown', (e) => {
-                    // Prevent clicks on buttons from triggering a jump
-                    if (e.target.tagName.toLowerCase() === 'button') {
-                        return;
-                    }
-                    
-                    this.initAudio();
-                    
-                    if (!gameState.gameStarted) {
-                        this.startGame();
-                    } else {
-                        this.handleJump();
-                    }
-                });
-
-                // Touch listener for mobile
-                document.addEventListener('touchstart', (e) => {
-                    // Prevent clicks on buttons from triggering a jump
-                    if (e.target.tagName.toLowerCase() === 'button') {
-                        return;
-                    }
-                    
-                    this.initAudio();
-                    
-                    if (!gameState.gameStarted) {
-                        this.startGame();
-                    } else {
-                        this.handleJump();
-                    }
-                });
+                // Separate mobile and desktop input handling
+                if (this.isMobile) {
+                    // Mobile: Only touch events
+                    document.addEventListener('touchstart', (e) => {
+                        // Prevent clicks on buttons from triggering a jump
+                        if (e.target.tagName.toLowerCase() === 'button') {
+                            return;
+                        }
+                        
+                        e.preventDefault(); // Prevent mouse events from firing
+                        this.initAudio();
+                        
+                        if (!gameState.gameStarted) {
+                            this.startGame();
+                        } else {
+                            this.handleJump();
+                        }
+                    });
+                } else {
+                    // Desktop: Only mouse events
+                    document.addEventListener('mousedown', (e) => {
+                        // Prevent clicks on buttons from triggering a jump
+                        if (e.target.tagName.toLowerCase() === 'button') {
+                            return;
+                        }
+                        
+                        this.initAudio();
+                        
+                        if (!gameState.gameStarted) {
+                            this.startGame();
+                        } else {
+                            this.handleJump();
+                        }
+                    });
+                }
 
                 // UI buttons
                 this.startBtn.addEventListener('click', () => {
@@ -257,9 +294,7 @@
                  this.gameOverElement.style.display = 'none';
                  this.scoreElement.textContent = '0';
                  
-                 // Reset mouse position and state (like in original)
-                 gameState.mouse.x = 120;
-                 gameState.mouse.y = 300;
+                 // Reset mouse state, but NOT position (already handled)
                  gameState.mouse.velocity = 0;
                  gameState.mouse.rotation = 0;
                  gameState.mouse.isEating = false;
@@ -307,24 +342,27 @@
              }
 
             gameLoop() {
+                const t0 = performance.now();
+
                 gameState.frameCount++;
                 
-                // Clear canvas
+                // Clear canvas efficiently
                 this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
                 
                 // Apply screen shake
                 this.ctx.save();
                 if (this.renderer) {
-                    this.renderer.applyScreenShake();
-                    
-                    // Render game
+                    const t_render_start = performance.now();
                     this.renderer.render();
+                    this.perf.render += performance.now() - t_render_start;
                 }
                 
                                  if (gameState.gameRunning) {
                      // Update game logic
+                     const t_update_start = performance.now();
                      if (this.mouse) this.mouse.update();
                      if (this.gameLogic) this.gameLogic.update();
+                     this.perf.update += performance.now() - t_update_start;
                      
                      // Update score display
                      this.scoreElement.textContent = gameState.score;
@@ -334,7 +372,9 @@
                 
                                  // Always draw the mouse if game started (like in original)
                  if (this.mouse && gameState.gameStarted) {
+                     const t_draw_start = performance.now();
                      this.mouse.draw();
+                     this.perf.drawMouse += performance.now() - t_draw_start;
                  }
                 
                 // Update screen shake
@@ -342,6 +382,25 @@
                 
                 this.ctx.restore();
                 
+                this.perf.total += performance.now() - t0;
+                this.perf.frameCount++;
+
+                const now = performance.now();
+                if (now - this.perf.lastLogTime > 1000) {
+                    const avg_total = (this.perf.total / this.perf.frameCount).toFixed(2);
+                    const avg_update = (this.perf.update / this.perf.frameCount).toFixed(2);
+                    const avg_render = (this.perf.render / this.perf.frameCount).toFixed(2);
+                    const avg_draw = (this.perf.drawMouse / this.perf.frameCount).toFixed(2);
+                    console.log(`Perf (ms): Total=${avg_total}, Update=${avg_update}, Render=${avg_render}, DrawMouse=${avg_draw}`);
+                    
+                    this.perf.lastLogTime = now;
+                    this.perf.frameCount = 0;
+                    this.perf.update = 0;
+                    this.perf.render = 0;
+                    this.perf.drawMouse = 0;
+                    this.perf.total = 0;
+                }
+
                 requestAnimationFrame(() => this.gameLoop());
             }
         }

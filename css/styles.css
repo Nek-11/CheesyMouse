@@ -34,6 +34,79 @@ body {
         inset 0 0 20px rgba(0, 0, 0, 0.8);
 }
 
+/* Mobile styles */
+@media (max-width: 800px) {
+    body {
+        padding: 0;
+        margin: 0;
+        height: 100vh;
+        overflow: hidden;
+    }
+    
+    #gameContainer {
+        width: 100vw;
+        height: 100vh;
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+    }
+    
+    #gameCanvas {
+        width: 100vw;
+        height: 100vh;
+        object-fit: cover;
+        object-position: left center; /* SHIFT THE VIEW TO THE LEFT */
+    }
+
+    #ui {
+        top: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 200;
+    }
+    
+    #score {
+        font-size: 18px;
+        padding: 6px 12px;
+    }
+    
+    #instructions {
+        bottom: 10px;
+        font-size: 10px;
+        padding: 6px 12px;
+    }
+    
+    #titleScreen {
+        padding: 20px;
+    }
+    
+    #titleScreen h1 {
+        font-size: 24px;
+        margin-bottom: 15px;
+    }
+    
+    #titleScreen p {
+        font-size: 11px;
+        margin-bottom: 15px;
+    }
+    
+    #gameOver {
+        padding: 20px;
+        width: 90%;
+        max-width: 300px;
+    }
+    
+    #gameOver h2 {
+        font-size: 18px;
+        margin-bottom: 10px;
+    }
+    
+    #gameOver p {
+        font-size: 10px;
+        margin-bottom: 8px;
+    }
+}
+
 #gameCanvas {
     display: block;
     background: transparent;
@@ -43,6 +116,17 @@ body {
     position: relative;
     z-index: 1;
     cursor: pointer;
+}
+
+@media (max-width: 768px) {
+    #gameCanvas {
+        width: 100vw !important;
+        height: 100vh !important;
+        object-fit: cover;
+        image-rendering: pixelated;
+        image-rendering: -moz-crisp-edges;
+        image-rendering: crisp-edges;
+    }
 }
 
 #ui {
