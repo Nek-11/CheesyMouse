@@ -19,7 +19,6 @@ class GIFPlayer {
             const promise = new Promise((resolve, reject) => {
                 img.onload = () => resolve(img);
                 img.onerror = () => {
-                    console.log(`Frame ${i} failed to load, creating fallback`);
                     // Create fallback frame
                     const canvas = document.createElement('canvas');
                     canvas.width = 64;
@@ -39,9 +38,7 @@ class GIFPlayer {
         try {
             this.frames = await Promise.all(loadPromises);
             this.isLoaded = true;
-            console.log(`GIF loaded: ${this.frames.length} frames`);
         } catch (error) {
-            console.log('GIF frames failed to load, using single image');
             // Fallback to single image
             const img = new Image();
             img.onload = () => {

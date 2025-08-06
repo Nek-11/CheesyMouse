@@ -108,26 +108,26 @@ class GameLogic {
                         this.onCheeseCollected();
                     }
 
-                    // Cheese crunch particles
-                    for (let j = 0; j < 10; j++) {
+                    // Reduced particles for better performance
+                    for (let j = 0; j < 5; j++) {
                         this.createParticle(
                             cheese.x,
                             cheese.y,
                             '255, 215, 0',
                             4,
-                            20,
+                            15,
                             Math.random() * 3 + 1
                         );
                     }
                     
-                    // Add sparkle particles
-                    for (let j = 0; j < 8; j++) {
+                    // Fewer sparkles
+                    for (let j = 0; j < 3; j++) {
                         this.createParticle(
                             cheese.x,
                             cheese.y,
                             '255, 255, 255',
                             6,
-                            35,
+                            20,
                             1
                         );
                     }
@@ -178,94 +178,137 @@ class GameLogic {
     }
 
     createRandomCheese() {
-        // Calculate safe zones for cheese placement
-        const groundY = 600 - this.gameState.config.game.groundHeight; // Canvas height - ground height
-        const safeMargin = 20; // Distance from obstacles (shelves, top, bottom)
+        // Optimized cheese placement - much faster!
+        const groundY = 600 - this.gameState.config.game.groundHeight;
+        const safeMargin = 20;
         const cheeseSize = 12;
         
-        // Try to place cheese in random positions across the visible screen area
-        const attempts = 15; // Maximum attempts to find a safe spot
-        let cheeseCreated = false;
+        // Get the newest shelf (the one we just created)
+        const newestShelf = this.gameState.wineShelves[this.gameState.wineShelves.length - 1];
+        if (!newestShelf) return;
         
-        for (let attempt = 0; attempt < attempts && !cheeseCreated; attempt++) {
-            // Random X position in the visible screen area (where player can actually see/collect cheese)
-            const randomX = 200 + Math.random() * 500; // Between x=200 and x=700
+        // Smart placement strategy: use predefined safe zones instead of brute force
+        const safeZones = this.calculateSafeZones(newestShelf, groundY, safeMargin, cheeseSize);
+        
+        if (safeZones.length > 0) {
+            // Pick a random safe zone
+            const zone = safeZones[Math.floor(Math.random() * safeZones.length)];
             
-            // Random Y position in the playable area (avoiding ground and top margin)
-            const minY = safeMargin + cheeseSize; // 20px from top
-            const maxY = groundY - safeMargin - cheeseSize; // 20px from ground line
-            const randomY = minY + Math.random() * (maxY - minY);
+            // Random position within the chosen safe zone
+            const randomX = zone.x + Math.random() * zone.width;
+            const randomY = zone.y + Math.random() * zone.height;
             
-            // Check if this position conflicts with any existing wine shelves
-            let isValidPosition = true;
+            const cheese = {
+                x: randomX,
+                y: randomY,
+                size: cheeseSize,
+                collected: false
+            };
             
-            for (const shelf of this.gameState.wineShelves) {
-                // Check if cheese bounding box overlaps with shelf horizontally (including safe margin)
-                const cheeseLeft = randomX - cheeseSize;
-                const cheeseRight = randomX + cheeseSize;
+            this.gameState.cheeses.push(cheese);
+        }
+    }
+    
+    calculateSafeZones(newestShelf, groundY, safeMargin, cheeseSize) {
+        const zones = [];
+        
+        // Zone 1: In the gap of the newest shelf (always safe from newest shelf)
+        const gapTop = newestShelf.topHeight + safeMargin + cheeseSize;
+        const gapBottom = newestShelf.bottomY - safeMargin - cheeseSize;
+        if (gapBottom > gapTop) {
+            const gapZone = {
+                x: newestShelf.x + newestShelf.width + 50,
+                y: gapTop,
+                width: 150,
+                height: gapBottom - gapTop
+            };
+            
+            // Check if this zone conflicts with other shelves
+            if (this.isZoneSafe(gapZone, safeMargin, cheeseSize)) {
+                zones.push(gapZone);
+            }
+        }
+        
+        // Zone 2: Above all shelves (if there's space)
+        const topZoneBottom = this.findLowestTopShelf() - safeMargin - cheeseSize;
+        if (topZoneBottom > safeMargin + cheeseSize) {
+            const topZone = {
+                x: 300,
+                y: safeMargin + cheeseSize,
+                width: 300,
+                height: topZoneBottom - (safeMargin + cheeseSize)
+            };
+            
+            if (this.isZoneSafe(topZone, safeMargin, cheeseSize)) {
+                zones.push(topZone);
+            }
+        }
+        
+        // Zone 3: Below all shelves (if there's space)
+        const bottomZoneTop = this.findHighestBottomShelf() + safeMargin + cheeseSize;
+        const bottomZoneBottom = groundY - safeMargin - cheeseSize;
+        if (bottomZoneBottom > bottomZoneTop) {
+            const bottomZone = {
+                x: 300,
+                y: bottomZoneTop,
+                width: 300,
+                height: bottomZoneBottom - bottomZoneTop
+            };
+            
+            if (this.isZoneSafe(bottomZone, safeMargin, cheeseSize)) {
+                zones.push(bottomZone);
+            }
+        }
+        
+        return zones;
+    }
+    
+    isZoneSafe(zone, safeMargin, cheeseSize) {
+        // Check if zone overlaps with any existing shelf
+        for (const shelf of this.gameState.wineShelves) {
+            // Only check visible shelves
+            if (shelf.x > -200 && shelf.x < 900) {
                 const shelfLeft = shelf.x - safeMargin;
                 const shelfRight = shelf.x + shelf.width + safeMargin;
+                const zoneLeft = zone.x;
+                const zoneRight = zone.x + zone.width;
                 
-                if (cheeseRight > shelfLeft && cheeseLeft < shelfRight) {
-                    // Horizontally overlapping, now check vertical collision with solid parts
-                    const cheeseTop = randomY - cheeseSize;
-                    const cheeseBottom = randomY + cheeseSize;
-                    
-                    // Check collision with top shelf (from 0 to topHeight)
+                // Check horizontal overlap
+                if (zoneRight > shelfLeft && zoneLeft < shelfRight) {
+                    // Check vertical overlap with shelf solid parts
+                    const zoneTop = zone.y;
+                    const zoneBottom = zone.y + zone.height;
                     const topShelfBottom = shelf.topHeight + safeMargin;
-                    const inTopShelf = cheeseTop < topShelfBottom;
-                    
-                    // Check collision with bottom shelf (from bottomY to ground)
                     const bottomShelfTop = shelf.bottomY - safeMargin;
-                    const inBottomShelf = cheeseBottom > bottomShelfTop;
                     
-                    if (inTopShelf || inBottomShelf) {
-                        isValidPosition = false;
-                        break;
-                    }
-                }
-            }
-            
-            if (isValidPosition) {
-                const cheese = {
-                    x: randomX,
-                    y: randomY,
-                    size: cheeseSize,
-                    collected: false
-                };
-                
-                this.gameState.cheeses.push(cheese);
-                cheeseCreated = true;
-            }
-        }
-        
-        // Fallback: if no safe random position found, try to place cheese in any gap that's visible on screen
-        if (!cheeseCreated) {
-            for (const shelf of this.gameState.wineShelves) {
-                // Only consider shelves that are visible or soon-to-be visible on screen
-                if (shelf.x < 800 && shelf.x > -200) {
-                    const gapMiddleY = shelf.topHeight + (shelf.bottomY - shelf.topHeight) / 2;
-                    const gapCenterX = shelf.x + shelf.width / 2;
-                    
-                    // Make sure the gap center is within safe bounds
-                    if (gapCenterX > 100 && gapCenterX < 700 && 
-                        gapMiddleY > safeMargin + cheeseSize && 
-                        gapMiddleY < groundY - safeMargin - cheeseSize) {
-                        
-                        const cheese = {
-                            x: gapCenterX,
-                            y: gapMiddleY,
-                            size: cheeseSize,
-                            collected: false
-                        };
-                        
-                        this.gameState.cheeses.push(cheese);
-                        cheeseCreated = true;
-                        break;
+                    // Zone conflicts if it overlaps with top shelf or bottom shelf
+                    if (zoneTop < topShelfBottom || zoneBottom > bottomShelfTop) {
+                        return false; // Zone is not safe
                     }
                 }
             }
         }
+        return true; // Zone is safe
+    }
+    
+    findLowestTopShelf() {
+        let lowest = Infinity;
+        for (const shelf of this.gameState.wineShelves) {
+            if (shelf.x > -200 && shelf.x < 900) { // Only visible shelves
+                lowest = Math.min(lowest, shelf.topHeight);
+            }
+        }
+        return lowest === Infinity ? 0 : lowest;
+    }
+    
+    findHighestBottomShelf() {
+        let highest = 0;
+        for (const shelf of this.gameState.wineShelves) {
+            if (shelf.x > -200 && shelf.x < 900) { // Only visible shelves
+                highest = Math.max(highest, shelf.bottomY);
+            }
+        }
+        return highest;
     }
 
     createParticle(x, y, color, velocity, life, size = null) {
@@ -286,26 +329,26 @@ class GameLogic {
     createJumpParticles() {
         const mouse = this.gameState.mouse;
         
-        // Enhanced jump particles with sparkle effect
-        for (let i = 0; i < 8; i++) {
+        // Reduced jump particles for performance
+        for (let i = 0; i < 4; i++) {
             this.createParticle(
                 mouse.x + Math.random() * mouse.width,
                 mouse.y + mouse.height,
                 '255, 255, 255',
                 4,
-                25,
+                15,
                 Math.random() * 3 + 1
             );
         }
         
-        // Add some golden sparkles
-        for (let i = 0; i < 3; i++) {
+        // Fewer golden sparkles
+        for (let i = 0; i < 2; i++) {
             this.createParticle(
                 mouse.x + mouse.width/2,
                 mouse.y + mouse.height/2,
                 '255, 215, 0',
                 2,
-                30,
+                20,
                 2
             );
         }

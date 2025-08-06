@@ -12,7 +12,7 @@
         
         <div id="titleScreen">
             <h1>CHEESYMOUSE</h1>
-            <p>Navigate through the wine cellar!<br>Collect cheese, avoid the bottles!</p>
+            <p>Navigate through the wine cellar<br><br>Collect cheese, avoid the bottles!</p>
             <button id="startBtn">START GAME</button>
         </div>
         
@@ -21,14 +21,14 @@
         </div>
         
         <div id="gameOver">
-            <h2>GAME OVER!</h2>
+            <h2>GAME OVER</h2>
             <p>The mouse got caught!</p>
             <p id="finalScore">CHEESE COLLECTED: 0</p>
             <button id="restartBtn">TRY AGAIN</button>
         </div>
         
         <div id="instructions">
-            PRESS SPACEBAR TO JUMP
+            PRESS SPACEBAR OR CLICK TO JUMP
         </div>
     </div>
 
@@ -137,6 +137,22 @@
                         } else {
                             this.handleJump();
                         }
+                    }
+                });
+
+                // Click listener
+                document.addEventListener('click', (e) => {
+                    // Prevent clicks on buttons from triggering a jump
+                    if (e.target.tagName.toLowerCase() === 'button') {
+                        return;
+                    }
+                    
+                    this.initAudio();
+                    
+                    if (!gameState.gameStarted) {
+                        this.startGame();
+                    } else {
+                        this.handleJump();
                     }
                 });
 

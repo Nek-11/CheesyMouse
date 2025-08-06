@@ -184,13 +184,8 @@ class GameRenderer {
             const y = Math.floor(cheese.y - cheese.size);
             const cheeseImg = this.assetLoader.getImage('cheese');
             
-            // Yellowish glow effect
-            const glowIntensity = 0.5 + Math.sin(this.gameState.frameCount * 0.1) * 0.3;
-            this.ctx.shadowColor = 'rgba(255, 255, 0, 0.8)';
-            this.ctx.shadowBlur = 15 * glowIntensity;
-            
-            // Floating animation
-            const float = Math.sin(this.gameState.frameCount * 0.08 + cheese.x * 0.01) * 3;
+            // Simple floating animation (much faster - no per-cheese calculations)
+            const float = (this.gameState.frameCount % 60 < 30) ? 1 : -1;
             
             // Use the cheese.png image if available
             if (cheeseImg && cheeseImg.complete && cheeseImg.naturalWidth > 0) {
@@ -202,9 +197,6 @@ class GameRenderer {
                 this.ctx.fillStyle = '#FFA500';
                 this.ctx.fillRect(x + 2, y + float + 2, cheese.size - 2, cheese.size - 2);
             }
-            
-            // Reset shadow
-            this.ctx.shadowBlur = 0;
         }
     }
 
@@ -215,19 +207,15 @@ class GameRenderer {
             particle.y += particle.vy;
             particle.vy += 0.15; // gravity
             particle.vx *= 0.98; // air resistance
-            particle.rotation += particle.rotationSpeed;
             particle.life--;
             
             if (particle.life <= 0) {
                 this.gameState.particles.splice(i, 1);
             } else {
+                // Much faster particle rendering - no save/restore/translate/rotate
                 const alpha = (particle.life / particle.maxLife) * 0.8;
-                this.ctx.save();
-                this.ctx.translate(particle.x, particle.y);
-                this.ctx.rotate(particle.rotation);
                 this.ctx.fillStyle = `rgba(${particle.color}, ${alpha})`;
-                this.ctx.fillRect(-particle.size/2, -particle.size/2, particle.size, particle.size);
-                this.ctx.restore();
+                this.ctx.fillRect(particle.x - particle.size/2, particle.y - particle.size/2, particle.size, particle.size);
             }
         }
     }

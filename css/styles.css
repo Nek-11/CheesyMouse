@@ -40,6 +40,9 @@ body {
     image-rendering: pixelated;
     image-rendering: -moz-crisp-edges;
     image-rendering: crisp-edges;
+    position: relative;
+    z-index: 1;
+    cursor: pointer;
 }
 
 #ui {
@@ -49,6 +52,7 @@ body {
     transform: translateX(-50%);
     text-align: center;
     z-index: 100;
+    pointer-events: none; /* Allow clicks to pass through */
 }
 
 #score {
@@ -134,6 +138,7 @@ body {
     padding: 8px 16px;
     border: 2px solid #8B4513;
     border-radius: 4px;
+    pointer-events: none; /* Allow clicks to pass through */
 }
 
 #titleScreen {

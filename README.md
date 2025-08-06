@@ -8,7 +8,7 @@ This is a fun little project where I tested something I've never done before (ga
 
 ## 🎮 How to Play
 
-- **SPACEBAR** to jump
+- **SPACEBAR or CLICK** to jump
 - **Collect cheese** to increase your score
 - **Avoid wine shelves** - they're deadly!
 - **Survive as long as possible** and beat your high score
