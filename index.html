@@ -141,7 +141,23 @@
                 });
 
                 // Click listener
-                document.addEventListener('click', (e) => {
+                document.addEventListener('mousedown', (e) => {
+                    // Prevent clicks on buttons from triggering a jump
+                    if (e.target.tagName.toLowerCase() === 'button') {
+                        return;
+                    }
+                    
+                    this.initAudio();
+                    
+                    if (!gameState.gameStarted) {
+                        this.startGame();
+                    } else {
+                        this.handleJump();
+                    }
+                });
+
+                // Touch listener for mobile
+                document.addEventListener('touchstart', (e) => {
                     // Prevent clicks on buttons from triggering a jump
                     if (e.target.tagName.toLowerCase() === 'button') {
                         return;
