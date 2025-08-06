@@ -173,15 +173,99 @@ class GameLogic {
         
         this.gameState.wineShelves.push(shelf);
         
-        // Create cheese in the middle of the gap
-        const cheese = {
-            x: shelf.x + shelf.width / 2,
-            y: gapTopPosition + gapSize / 2,
-            size: 12,
-            collected: false
-        };
+        // Create cheese in random free spots
+        this.createRandomCheese();
+    }
+
+    createRandomCheese() {
+        // Calculate safe zones for cheese placement
+        const groundY = 600 - this.gameState.config.game.groundHeight; // Canvas height - ground height
+        const safeMargin = 20; // Distance from obstacles (shelves, top, bottom)
+        const cheeseSize = 12;
         
-        this.gameState.cheeses.push(cheese);
+        // Try to place cheese in random positions across the visible screen area
+        const attempts = 15; // Maximum attempts to find a safe spot
+        let cheeseCreated = false;
+        
+        for (let attempt = 0; attempt < attempts && !cheeseCreated; attempt++) {
+            // Random X position in the visible screen area (where player can actually see/collect cheese)
+            const randomX = 200 + Math.random() * 500; // Between x=200 and x=700
+            
+            // Random Y position in the playable area (avoiding ground and top margin)
+            const minY = safeMargin + cheeseSize; // 20px from top
+            const maxY = groundY - safeMargin - cheeseSize; // 20px from ground line
+            const randomY = minY + Math.random() * (maxY - minY);
+            
+            // Check if this position conflicts with any existing wine shelves
+            let isValidPosition = true;
+            
+            for (const shelf of this.gameState.wineShelves) {
+                // Check if cheese bounding box overlaps with shelf horizontally (including safe margin)
+                const cheeseLeft = randomX - cheeseSize;
+                const cheeseRight = randomX + cheeseSize;
+                const shelfLeft = shelf.x - safeMargin;
+                const shelfRight = shelf.x + shelf.width + safeMargin;
+                
+                if (cheeseRight > shelfLeft && cheeseLeft < shelfRight) {
+                    // Horizontally overlapping, now check vertical collision with solid parts
+                    const cheeseTop = randomY - cheeseSize;
+                    const cheeseBottom = randomY + cheeseSize;
+                    
+                    // Check collision with top shelf (from 0 to topHeight)
+                    const topShelfBottom = shelf.topHeight + safeMargin;
+                    const inTopShelf = cheeseTop < topShelfBottom;
+                    
+                    // Check collision with bottom shelf (from bottomY to ground)
+                    const bottomShelfTop = shelf.bottomY - safeMargin;
+                    const inBottomShelf = cheeseBottom > bottomShelfTop;
+                    
+                    if (inTopShelf || inBottomShelf) {
+                        isValidPosition = false;
+                        break;
+                    }
+                }
+            }
+            
+            if (isValidPosition) {
+                const cheese = {
+                    x: randomX,
+                    y: randomY,
+                    size: cheeseSize,
+                    collected: false
+                };
+                
+                this.gameState.cheeses.push(cheese);
+                cheeseCreated = true;
+            }
+        }
+        
+        // Fallback: if no safe random position found, try to place cheese in any gap that's visible on screen
+        if (!cheeseCreated) {
+            for (const shelf of this.gameState.wineShelves) {
+                // Only consider shelves that are visible or soon-to-be visible on screen
+                if (shelf.x < 800 && shelf.x > -200) {
+                    const gapMiddleY = shelf.topHeight + (shelf.bottomY - shelf.topHeight) / 2;
+                    const gapCenterX = shelf.x + shelf.width / 2;
+                    
+                    // Make sure the gap center is within safe bounds
+                    if (gapCenterX > 100 && gapCenterX < 700 && 
+                        gapMiddleY > safeMargin + cheeseSize && 
+                        gapMiddleY < groundY - safeMargin - cheeseSize) {
+                        
+                        const cheese = {
+                            x: gapCenterX,
+                            y: gapMiddleY,
+                            size: cheeseSize,
+                            collected: false
+                        };
+                        
+                        this.gameState.cheeses.push(cheese);
+                        cheeseCreated = true;
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     createParticle(x, y, color, velocity, life, size = null) {

@@ -62,6 +62,10 @@ class GameRenderer {
             this.gameState.groundOffset = (this.gameState.groundOffset + this.gameState.gameSpeed) % 800;
         }
         
+        // Draw black line above ground (5px thick)
+        this.ctx.fillStyle = '#000000';
+        this.ctx.fillRect(0, groundY - 5, this.canvas.width, 5);
+        
         // Use your custom bricks.png image if loaded
         if (bricksImg && bricksImg.complete && bricksImg.naturalWidth > 0) {
             // Draw your 800x95 bricks image, scrolling horizontally
@@ -102,6 +106,12 @@ class GameRenderer {
             
             // Ground surface highlight (accent red line)
             this.drawPixelRect(0, groundY, this.canvas.width, 1, '#7d0000');
+        }
+        
+        // Also draw black line above fallback ground
+        if (!bricksImg || !bricksImg.complete || bricksImg.naturalWidth === 0) {
+            this.ctx.fillStyle = '#000000';
+            this.ctx.fillRect(0, groundY - 5, this.canvas.width, 5);
         }
     }
 

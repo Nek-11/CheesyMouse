@@ -2,6 +2,8 @@
 
 Navigate a brave mouse through a treacherous wine cellar, collecting cheese while avoiding deadly wine bottle shelves.
 
+This is a fun little project where I tested something I've never done before (game design) by vibe-coding it with Cursor. Just wanted to see what would happen if I tried to build a simple "Flappy Bird clone" from scratch.
+
 ![CheesyMouse Game Screenshot](images/screenshot.png)
 
 ## 🎮 How to Play
@@ -41,7 +43,8 @@ No build process required: it's pure HTML5/JavaScript.
 - **CSS3** for UI styling
 - **ChatGPT** for image creation
 - **Royalty free images and sounds** found online
+- **Cursor** for coding
 
 ---
 
-**Created with 🧀** 
+**Created with  🧀**
